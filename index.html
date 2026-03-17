@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Cupid Run 💘</title>
+
+<link rel="stylesheet" href="style.css">
+
+</head>
+
+<body>
+
+<div id="startScreen">
+  <h1>💘 Cupid Run</h1>
+  <p>Capai 500m untuk membuka hadiah 🎁</p>
+  <button onclick="startGame()">Mulai</button>
+</div>
+
+<canvas id="gameCanvas" width="800" height="200"></canvas>
+
+<div id="endScreen" class="hidden">
+  <h1>🎉 HAPPY BIRTHDAY 🎉</h1>
+  <p id="message"></p>
+  <video width="300" controls autoplay>
+    <source src="video.mp4" type="video/mp4">
+  </video>
+</div>
+
+<script src="script.js"></script>
+
+</body>
+</html>
