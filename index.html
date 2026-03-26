@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Happy Birthday Sayaangkuuu Cintaakuuu 🎂</title>
+<title>Happyyy Birthdaayyy Sayaangkuuu Cintaakuuu 🎂</title>
 <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Quicksand:wght@400;600;700&display=swap" rel="stylesheet">
 <style>
   /* ============================================
@@ -707,13 +707,13 @@ function gameLoop() {
   // Gravity
   if (!isOnGround) {
     dinoVY += gravity;
-    dinoY -= dinoVY;
-    if (dinoY <= 0) {
+    dinoY += dinoVY;
+    if (dinoY >= 0) {
       dinoY = 0;
       dinoVY = 0;
       isOnGround = true;
     }
-    dino.style.bottom = (20 + dinoY) + 'px';
+    dino.style.bottom = (20 - dinoY) + 'px';
   } else {
     animateLegs();
   }
@@ -734,8 +734,9 @@ function gameLoop() {
 
     // Collision
     if (
-      obs.x < 80 + 50 && obs.x + obs.w > 80 + 10 &&
-      dinoY < obs.h
+      obs.x < 80 + 50 && 
+      obs.x + obs.w > 80 + 10 &&
+      (dinoY > obs.h + 10)
     ) {
       hit = true;
     }
@@ -764,7 +765,7 @@ function gameLoop() {
 function spawnObstacle() {
   const el = document.createElement('div');
   el.className = 'obstacle cactus';
-  const h = 20 + Math.random() * 20;
+  const h = 15 + Math.random() * 15;
   el.style.height = h + 'px';
   el.style.left = (window.innerWidth + 50) + 'px';
   obstaclesContainer.appendChild(el);
