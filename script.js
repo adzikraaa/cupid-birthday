@@ -1,151 +1,202 @@
 let canvas = document.getElementById("gameCanvas");
 let ctx = canvas.getContext("2d");
 
-// LOAD IMAGE
+// IMAGE
 let cupidImg = new Image();
 cupidImg.src = "assets/cupid.png";
 
 let heartImg = new Image();
 heartImg.src = "assets/heart.png";
 
-// SOUND
-let jumpSound = new Audio("assets/jump.mp3");
-let bgMusic = new Audio("assets/bg-music.mp3");
-bgMusic.loop = true;
+// FOTO ENDING (WAJIB ADA FILE INI)
+let endingImg = new Image();
+endingImg.src = "assets/foto.png?v=" + Date.now(); // anti cache
 
+// AUDIO SFX
+let jumpSound = new Audio("assets/jump.mp3");
+let popSound = new Audio("assets/typing.mp3"); // ganti dari pop.mp3
+popSound.volume = 0.3;
+
+// 🔥 WEB AUDIO ENGINE (ANTI MATI)
+let audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+let bgSource = null;
+let bgBuffer = null;
+let gainNode = audioCtx.createGain();
+gainNode.connect(audioCtx.destination);
+
+// LOAD MUSIC
+fetch("assets/bg-music.mp3")
+  .then(res => res.arrayBuffer())
+  .then(data => audioCtx.decodeAudioData(data))
+  .then(buffer => {
+    bgBuffer = buffer;
+  });
+
+// PLAY MUSIC
+function playMusic() {
+  if (!bgBuffer) return;
+
+  if (bgSource) {
+    try { bgSource.stop(); } catch(e){}
+  }
+
+  bgSource = audioCtx.createBufferSource();
+  bgSource.buffer = bgBuffer;
+  bgSource.loop = false; // 🔥 biar lagu jalan sampe selesai
+
+  bgSource.connect(gainNode);
+  gainNode.gain.value = 0.7;
+
+  bgSource.start(0);
+}
+
+// FADE
+function fadeVolume(target, duration = 500) {
+  let start = gainNode.gain.value;
+  let step = (target - start) / (duration / 50);
+
+  let interval = setInterval(() => {
+    gainNode.gain.value += step;
+
+    if (
+      (step > 0 && gainNode.gain.value >= target) ||
+      (step < 0 && gainNode.gain.value <= target)
+    ) {
+      gainNode.gain.value = target;
+      clearInterval(interval);
+    }
+  }, 50);
+}
+
+// GAME DATA
 let dino = { x: 50, y: 150, w: 40, h: 40, vy: 0 };
 let gravity = 1.2;
 let obstacles = [];
 let score = 0;
-let gameRunning = false;
 
+let gameRunning = false;
+let gameEnded = false;
+
+// START
 function startGame() {
   document.getElementById("startScreen").style.display = "none";
+
+  audioCtx.resume().then(() => {
+    playMusic();
+  });
+
   gameRunning = true;
-  bgMusic.play();
   loop();
 }
 
+// JUMP (MATIIN PAS ENDING)
 document.addEventListener("keydown", function(e) {
+  if (gameEnded) return;
+
   if (e.code === "Space" && dino.y === 150) {
-    dino.vy = -15;
+    dino.vy = -18;
+    jumpSound.currentTime = 0;
     jumpSound.play();
   }
 });
 
+// LOOP
 function loop() {
-  if (!gameRunning) return;
-
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-  // DRAW CUPID
-  ctx.drawImage(cupidImg, dino.x, dino.y, dino.w, dino.h);
+  // 🔥 GAME MASIH JALAN WALAU ENDING
+  if (gameRunning || gameEnded) {
 
-  // GRAVITY
-  dino.y += dino.vy;
-  dino.vy += gravity;
+    // karakter
+    ctx.drawImage(cupidImg, dino.x, dino.y, dino.w, dino.h);
 
-  if (dino.y > 150) {
-    dino.y = 150;
-    dino.vy = 0;
-  }
+    if (!gameEnded) {
+      dino.y += dino.vy;
+      dino.vy += gravity;
 
-  // OBSTACLE
-  if (Math.random() < 0.02) {
-    obstacles.push({ x: 800, y: 150, w: 30, h: 30 });
-  }
+      if (dino.y > 150) {
+        dino.y = 150;
+        dino.vy = 0;
+      }
 
-  obstacles.forEach((obs) => {
-    obs.x -= 6;
-    ctx.drawImage(heartImg, obs.x, obs.y, obs.w, obs.h);
+      // spawn obstacle
+      if (Math.random() < 0.01) {
+        obstacles.push({ x: 800, y: 150, w: 30, h: 30 });
 
-    // COLLISION
-    if (
-      dino.x < obs.x + obs.w &&
-      dino.x + dino.w > obs.x &&
-      dino.y < obs.y + obs.h &&
-      dino.y + dino.h > obs.y
-    ) {
-      gameRunning = false;
-      bgMusic.pause();
-      alert("💔 Yah gagal... ulang lagi ya!");
-      location.reload();
+        popSound.currentTime = 0;
+        popSound.play().catch(()=>{});
+      }
     }
-  });
 
-  // SCORE
-  score++;
-  ctx.fillStyle = "#ff1493";
-  ctx.font = "16px Arial";
-  ctx.fillText("Love Meter: " + score + "/500 💖", 600, 20);
+    // obstacle tetap jalan
+    obstacles.forEach((obs) => {
+      obs.x -= 4;
+      ctx.drawImage(heartImg, obs.x, obs.y, obs.w, obs.h);
 
-  // WIN
-  if (score >= 500) {
-    gameRunning = false;
-    bgMusic.pause();
-    showEnding();
-    return;
+      if (!gameEnded &&
+        dino.x < obs.x + obs.w &&
+        dino.x + dino.w > obs.x &&
+        dino.y < obs.y + obs.h &&
+        dino.y + dino.h > obs.y
+      ) {
+        gameRunning = false;
+        fadeVolume(0.2, 300);
+        alert("💔 Yah gagal... ulang lagi ya!");
+        location.reload();
+      }
+    });
+
+    // score berhenti di 500
+    if (!gameEnded) {
+      score++;
+    }
+
+    ctx.fillStyle = "#ff1493";
+    ctx.fillText("Love Meter: " + score + "/500 💖", 600, 20);
+
+    // 🔥 TRIGGER ENDING
+    if (score >= 500 && !gameEnded) {
+      gameEnded = true;
+      showEnding();
+    }
   }
 
   requestAnimationFrame(loop);
 }
 
-// ENDING EFFECT
+// ENDING
 function showEnding() {
-  let end = document.getElementById("endScreen");
-  end.classList.remove("hidden");
+  fadeVolume(0.3, 800);
 
+  // FOTO
+  let img = document.getElementById("endingPhoto");
+  img.src = endingImg.src;
+
+  // TEXT
   typeWriter(romanticText, "message", 40);
-
-  // CONFETTI SIMPLE
-  for (let i = 0; i < 100; i++) {
-    let div = document.createElement("div");
-    div.style.position = "fixed";
-    div.style.width = "10px";
-    div.style.height = "10px";
-    div.style.background = "pink";
-    div.style.top = "0";
-    div.style.left = Math.random() * 100 + "%";
-    div.style.animation = "fall 3s linear";
-    document.body.appendChild(div);
-    
-  }
 }
-// TEKS ROMANTIS
-let romanticText = "Hari ini bukan cuma tentang ulang tahun kamu... tapi tentang betapa beruntungnya dunia karena punya kamu. Aku bersyukur bisa kenal kamu, bisa ada di cerita kamu, dan semoga... aku tetap jadi bagian dari hari-hari kamu ke depan. Happy Birthday ❤️";
 
-// TYPEWRITER EFFECT
+// TEXT
+let romanticText = "Hari ini bukan cuma tentang ulang tahun kamu... tapi tentang betapa beruntungnya dunia karena punya kamu ❤️";
+
+// TYPEWRITER + SOUND
 function typeWriter(text, elementId, speed = 50) {
   let i = 0;
   let el = document.getElementById(elementId);
-
-  function typing() {
-    if (i < text.length) {
-      el.innerHTML += text.charAt(i);
-      i++;
-      setTimeout(typing, speed);
-    }
-  }
-
-  el.innerHTML = ""; // reset
-  typing();
-}
-let typingSound = new Audio("assets/typing.mp3");
-
-function typeWriter(text, elementId, speed = 50) {
-  let i = 0;
-  let el = document.getElementById(elementId);
-
-  function typing() {
-    if (i < text.length) {
-      el.innerHTML += text.charAt(i);
-      typingSound.currentTime = 0;
-      typingSound.play();
-      i++;
-      setTimeout(typing, speed);
-    }
-  }
 
   el.innerHTML = "";
+
+  function typing() {
+    if (i < text.length) {
+      el.innerHTML += text.charAt(i);
+
+      popSound.currentTime = 0;
+      popSound.play().catch(()=>{});
+
+      i++;
+      setTimeout(typing, speed);
+    }
+  }
+
   typing();
 }
