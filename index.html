@@ -179,7 +179,7 @@
   /* DINO */
   #dino {
     position: absolute;
-    bottom: 60px;
+    bottom: 20px;
     left: 80px;
     width: 60px;
     height: 70px;
@@ -194,7 +194,7 @@
   /* Obstacles */
   .obstacle {
     position: absolute;
-    bottom: 60px;
+    bottom: 20px;
   }
 
   .cactus {
@@ -656,7 +656,7 @@ let animationId;
 let distance = 0;       // in meters (scaled)
 let speed = 5;          // px per frame
 let gravity = 1.2;
-let jumpForce = -18;
+let jumpForce = -16;
 let dinoY = 0;          // relative bottom offset
 let dinoVY = 0;
 let isOnGround = true;
@@ -713,7 +713,7 @@ function gameLoop() {
       dinoVY = 0;
       isOnGround = true;
     }
-    dino.style.bottom = (60 + dinoY) + 'px';
+    dino.style.bottom = (20 + dinoY) + 'px';
   } else {
     animateLegs();
   }
@@ -764,7 +764,7 @@ function gameLoop() {
 function spawnObstacle() {
   const el = document.createElement('div');
   el.className = 'obstacle cactus';
-  const h = 40 + Math.random() * 30;
+  const h = 20 + Math.random() * 20;
   el.style.height = h + 'px';
   el.style.left = (window.innerWidth + 50) + 'px';
   obstaclesContainer.appendChild(el);
@@ -801,7 +801,7 @@ function restartGame() {
   obstacles.forEach(o => o.el.remove());
   obstacles = [];
 
-  dino.style.bottom = '60px';
+  dino.style.bottom = '20px';
   dino.style.left = '80px';
   dino.style.opacity = '1';
 
